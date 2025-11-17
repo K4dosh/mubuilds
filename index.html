@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Mu Build Calculator</title>
+
+<style>
+    body {
+        background: #0b0e13 url('https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/2f6f1baa-7ddc-4961-9550-bc1ef4ad2ed0/deavn71-daf1b09a-2923-477c-b393-b3b4e9bb7e4c.png/v1/fill/w_1192,h_670,q_70,strp/soul_master_mu_online_wallpaper_by_imversus_deavn71-pre.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTA4MCIsInBhdGgiOiIvZi8yZjZmMWJhYS03ZGRjLTQ5NjEtOTU1MC1iYzFlZjRhZDJlZDAvZGVhdm43MS1kYWYxYjA5YS0yOTIzLTQ3N2MtYjM5My1iM2I0ZTliYjdlNGMucG5nIiwid2lkdGgiOiI8PTE5MjAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.GugISMabIygy0BtoeWs73Wg0gGNUqEtt2wAKr3zV4lM') no-repeat center center fixed;
+        background-size: cover;
+        color: #dcdcdc;
+        font-family: Trebuchet MS, Arial, sans-serif;
+        padding: 20px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+    }
+    
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(ellipse at center, rgba(11,14,19,0.3) 0%, rgba(11,14,19,0.7) 100%);
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    body > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .box {
+        width: 420px;
+        background: rgba(16,20,28,0.75);
+        border: 2px solid #2b6aff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 0 25px rgba(43,106,255,0.6), 0 0 50px rgba(0,0,0,0.8);
+        backdrop-filter: blur(5px);
+    }
+
+    h1 {
+        color: #e8c36a;
+        text-shadow: 0 0 8px #000;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    label {
+        color: #89a6ff;
+        font-weight: bold;
+        text-shadow: 0 0 5px #000;
+    }
+
+    input {
+        width: 100%;
+        padding: 8px;
+        margin-top: 4px;
+        margin-bottom: 12px;
+        background: #0c0f16;
+        border: 1px solid #2b6aff;
+        color: #bcd0ff;
+        border-radius: 5px;
+        font-size: 16px;
+        box-shadow: inset 0 0 8px #000;
+    }
+
+    .divider {
+        height: 1px;
+        background: #2b6aff;
+        margin: 20px 0;
+        box-shadow: 0 0 5px #2b6aff;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background: #204dff;
+        border: 1px solid #5e82ff;
+        font-size: 18px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        color: white;
+        text-shadow: 0 0 5px black;
+        box-shadow: 0 0 10px #284bff;
+    }
+
+    button:hover {
+        background: #4e73ff;
+    }
+
+    #resultado {
+        width: 420px;
+        margin-top: 20px;
+        background: rgba(12,16,24,0.75);
+        border: 2px solid #284bff;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(40,75,255,0.5), 0 0 40px rgba(0,0,0,0.8);
+        backdrop-filter: blur(5px);
+        display: none;
+    }
+
+    .stat {
+        color: #ffc266;
+        font-weight: bold;
+    }
+
+    .lock-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+
+    .lock-container input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .lock-container label {
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .help-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        background: #2b6aff;
+        color: white;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: help;
+        position: relative;
+    }
+
+    .help-icon:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(16,20,28,0.95);
+        color: #bcd0ff;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #2b6aff;
+        width: 250px;
+        font-size: 12px;
+        font-weight: normal;
+        text-align: center;
+        z-index: 1000;
+        box-shadow: 0 0 15px rgba(43,106,255,0.6);
+    }
+
+    .help-icon:hover::before {
+        content: '';
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: #2b6aff;
+        z-index: 1001;
+    }
+
+</style>
+</head>
+
+<body>
+
+<h1>Mu Build Calculator</h1>
+
+<div class="box">
+
+    <label>Pontos Livres:</label>
+    <input type="number" id="free" placeholder="Ex: 544">
+
+    <div class="divider"></div>
+
+    <label>STR Atual:</label>
+    <input type="number" id="str" placeholder="Ex: 555 (opcional)">
+
+    <label>AGI Atual:</label>
+    <input type="number" id="agi" placeholder="Ex: 276 (opcional)">
+
+    <label>VIT Atual:</label>
+    <input type="number" id="vit" placeholder="Ex: 229 (opcional)">
+
+    <label>ENE Atual:</label>
+    <input type="number" id="ene" placeholder="Ex: 50 (opcional)">
+
+    <div class="divider"></div>
+
+    <div class="lock-container">
+        <input type="checkbox" id="lockBuild">
+        <label for="lockBuild">Lock Build</label>
+        <span class="help-icon" data-tooltip="Ao marcar Lock build, o cálculo de distribuição de pontos seguirá o limite de pontos distribuidos na build original, sem ultrapassar os valores.">?</span>
+    </div>
+
+    <button onclick="calcular()">Calcular</button>
+</div>
+
+<div id="resultado"></div>
+
+<script>
+function calcular() {
+
+    let free = parseInt(document.getElementById("free").value);
+
+    if (!free || free <= 0) {
+        document.getElementById("resultado").style.display = "block";
+        document.getElementById("resultado").innerHTML =
+            "<p>Informe a quantidade de pontos livres.</p>";
+        return;
+    }
+
+    let STR = parseInt(document.getElementById("str").value) || 0;
+    let AGI = parseInt(document.getElementById("agi").value) || 0;
+    let VIT = parseInt(document.getElementById("vit").value) || 0;
+    let ENE = parseInt(document.getElementById("ene").value) || 0;
+
+    let lockBuild = document.getElementById("lockBuild").checked;
+
+    // Build original de referência
+    const BUILD_FINAL = {
+        STR: 23321,
+        AGI: 14175,
+        VIT: 14167,
+        ENE: 911,
+        TOTAL: 52574
+    };
+
+    // Proporções da build
+    let propSTR = BUILD_FINAL.STR / BUILD_FINAL.TOTAL;  // 0.443595
+    let propAGI = BUILD_FINAL.AGI / BUILD_FINAL.TOTAL;  // 0.269587
+    let propVIT = BUILD_FINAL.VIT / BUILD_FINAL.TOTAL;  // 0.269435
+    let propENE = BUILD_FINAL.ENE / BUILD_FINAL.TOTAL;  // 0.017327
+
+    let addSTR, addAGI, addVIT, addENE;
+
+    // Calcula a proporção atual dos atributos fornecidos
+    let totalAtual = STR + AGI + VIT + ENE;
+
+    // Se há atributos atuais, ajusta a distribuição para corrigir desvios
+    if (totalAtual > 0) {
+        // Calcula quanto cada atributo deveria ter na proporção ideal
+        let targetSTR = (totalAtual + free) * propSTR;
+        let targetAGI = (totalAtual + free) * propAGI;
+        let targetVIT = (totalAtual + free) * propVIT;
+        let targetENE = (totalAtual + free) * propENE;
+
+        // Calcula quanto falta para cada atributo atingir o target
+        let necessarioSTR = Math.max(0, targetSTR - STR);
+        let necessarioAGI = Math.max(0, targetAGI - AGI);
+        let necessarioVIT = Math.max(0, targetVIT - VIT);
+        let necessarioENE = Math.max(0, targetENE - ENE);
+
+        let totalNecessario = necessarioSTR + necessarioAGI + necessarioVIT + necessarioENE;
+
+        // Recalcula proporções baseado no que é necessário para cada atributo
+        if (totalNecessario > 0) {
+            propSTR = necessarioSTR / totalNecessario;
+            propAGI = necessarioAGI / totalNecessario;
+            propVIT = necessarioVIT / totalNecessario;
+            propENE = necessarioENE / totalNecessario;
+        }
+    }
+
+    if (lockBuild) {
+        // Modo Lock Build: respeita os limites da build original
+        let maxSTR = Math.max(0, BUILD_FINAL.STR - STR);
+        let maxAGI = Math.max(0, BUILD_FINAL.AGI - AGI);
+        let maxVIT = Math.max(0, BUILD_FINAL.VIT - VIT);
+        let maxENE = Math.max(0, BUILD_FINAL.ENE - ENE);
+
+        addSTR = Math.min(Math.round(free * propSTR), maxSTR);
+        addAGI = Math.min(Math.round(free * propAGI), maxAGI);
+        addVIT = Math.min(Math.round(free * propVIT), maxVIT);
+        addENE = Math.min(Math.round(free * propENE), maxENE);
+
+        // Redistribui pontos não utilizados
+        let pontosUsados = addSTR + addAGI + addVIT + addENE;
+        let pontosRestantes = free - pontosUsados;
+
+        while (pontosRestantes > 0) {
+            let distribuiu = false;
+
+            if (STR + addSTR < BUILD_FINAL.STR && pontosRestantes > 0) {
+                addSTR++;
+                pontosRestantes--;
+                distribuiu = true;
+            }
+            if (AGI + addAGI < BUILD_FINAL.AGI && pontosRestantes > 0) {
+                addAGI++;
+                pontosRestantes--;
+                distribuiu = true;
+            }
+            if (VIT + addVIT < BUILD_FINAL.VIT && pontosRestantes > 0) {
+                addVIT++;
+                pontosRestantes--;
+                distribuiu = true;
+            }
+            if (ENE + addENE < BUILD_FINAL.ENE && pontosRestantes > 0) {
+                addENE++;
+                pontosRestantes--;
+                distribuiu = true;
+            }
+
+            if (!distribuiu) break;
+        }
+    } else {
+        // Modo normal: distribui proporcionalmente (com correção automática se necessário)
+        addSTR = Math.round(free * propSTR);
+        addAGI = Math.round(free * propAGI);
+        addVIT = Math.round(free * propVIT);
+        addENE = Math.round(free * propENE);
+    }
+
+    STR += addSTR;
+    AGI += addAGI;
+    VIT += addVIT;
+    ENE += addENE;
+
+    document.getElementById("resultado").style.display = "block";
+    document.getElementById("resultado").innerHTML =
+        `<h3 style="color:#e8c36a;">Distribuição Recomendada</h3>
+
+        <p><span class="stat">STR adicionados:</span> ${addSTR}</p>
+        <p><span class="stat">AGI adicionados:</span> ${addAGI}</p>
+        <p><span class="stat">VIT adicionados:</span> ${addVIT}</p>
+        <p><span class="stat">ENE adicionados:</span> ${addENE}</p>
+
+        <h3 style="color:#e8c36a; margin-top:20px;">Novos Status</h3>
+
+        <p><span class="stat">STR:</span> ${STR}</p>
+        <p><span class="stat">AGI:</span> ${AGI}</p>
+        <p><span class="stat">VIT:</span> ${VIT}</p>
+        <p><span class="stat">ENE:</span> ${ENE}</p>
+        `;
+}
+</script>
+
+</body>
+</html>
