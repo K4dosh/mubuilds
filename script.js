@@ -25,9 +25,9 @@ const PRESETS = {
   bk_build: { STR: 17028, AGI: 14110, VIT: 8025,  ENE: 2062,  COM: 0 },
   sm_build: { STR: 779,   AGI: 18554, VIT: 8542,  ENE: 29236, COM: 0 },
   elf_build:{ STR: 2022,  AGI: 34767, VIT: 14863, ENE: 1986,  COM: 0 },
-  mg_forca:{ STR: 8583,  AGI: 13425, VIT: 30201, ENE: 2026,  COM: 0 },
   mg_energia:{STR: 979,  AGI: 10092, VIT: 10171, ENE: 29297, COM: 0 },
-  dl_build: { STR: 29316, AGI: 24020, VIT: 3820,  ENE: 5007,  COM: 2025 },
+  mg_forca:{ STR: 22000, AGI: 17238, VIT: 10419, ENE: 2014, COM: 0 },
+  dl_build: { STR: 33117, AGI: 7235, VIT: 3975,  ENE: 5990,  COM: 1874 },
   sum_build:{ STR: 231,   AGI: 11479, VIT: 8003,  ENE: 26984, COM: 0 }
 };
 
@@ -35,10 +35,9 @@ function getInput(id){ return document.getElementById(id) }
 function toInt(v){ v = Number(v); return isNaN(v)?0:Math.floor(v); }
 
 function setInfo(msg, isError){
-  const el = document.getElementById('infoMessage');
-  const el2 = document.getElementById('globalInfo');
-  if(el){ el.innerText = msg || ''; el.style.color = isError? '#f1b0b0' : '#9fe3a7'; }
-  if(el2){ el2.innerText = msg || ''; el2.style.color = isError? '#f1b0b0' : '#9fe3a7'; }
+  // Only show informational / error messages in the main (left) panel.
+  const mainEl = document.getElementById('globalInfo');
+  if(mainEl){ mainEl.innerText = msg || ''; mainEl.style.color = isError? '#f1b0b0' : '#9fe3a7'; }
 }
 
 function applyPreset(name){
@@ -82,6 +81,12 @@ function calcAndShow(){
   let props = window.PROPS_VIEW || PROPS;
   if(window.PROPS_VIEW && window.PROPS_VIEW.current){ props = PROPS; }
   const selectedPreset = window.SELECTED_PRESET || '';
+  // If a preset is selected, compute its absolute total (if available) to provide exact-match messaging
+  let presetTotal = null;
+  if(selectedPreset && PRESETS[selectedPreset] && PRESETS[selectedPreset].status !== 'current'){
+    const p = PRESETS[selectedPreset];
+    presetTotal = (p.STR||0) + (p.AGI||0) + (p.VIT||0) + (p.ENE||0) + (p.COM||0);
+  }
 
   // Improved proportional allocation using Largest Remainder Method (Hamilton)
   const stats = ['STR','AGI','VIT','ENE','COM'];
@@ -206,13 +211,22 @@ function calcAndShow(){
   document.getElementById('finalCOM').innerText = finalCOM;
 
   document.getElementById('resultado').classList.remove('hidden');
+  // Clear transient messages from the right panel so only the main panel shows alerts
+  const infoEl = document.getElementById('infoMessage');
+  if(infoEl) infoEl.innerText = '';
 
   // Update algorithm message (dynamic)
   const msgEl = document.getElementById('algorithmMessage');
   if(selectedPreset === 'status_atual' || (!selectedPreset && (baseSTR || baseAGI || baseVIT || baseENE || baseCOM))){
     msgEl.innerHTML = '<em>Algoritmo:</em> distribuição inteligente — prioriza atributos maiores (status atual).';
   } else if (selectedPreset){
-    msgEl.innerHTML = '<em>Algoritmo:</em> distribuição proporcional baseada na build de referência.';
+    if(presetTotal !== null && free === presetTotal){
+      msgEl.innerHTML = '<em>Algoritmo:</em> distribuição idêntica à build selecionada (valores exatos correspondem ao preset).';
+    } else if(presetTotal !== null && free > presetTotal){
+      msgEl.innerHTML = '<em>Algoritmo:</em> distribuição proporcional baseada na build; pontos adicionais priorizam atributos maiores da build.';
+    } else {
+      msgEl.innerHTML = '<em>Algoritmo:</em> distribuição proporcional baseada na build de referência.';
+    }
   } else {
     msgEl.innerHTML = '';
   }
@@ -286,40 +300,83 @@ function toBase36Pad(n){
   return v.toString(36).toLowerCase().padStart(4,'0');
 }
 function fromBase36Chunk(s){ return parseInt(s, 36) || 0; }
+// New numeric-only compact export/import
+// Format: for each attribute (STR,AGI,VIT,ENE,COM) write 1-digit length (1..9) then the decimal digits of the value
+// Example: STR=123 -> "3123" (length '3' + '123'). For five attributes concatenate: L1V1L2V2L3V3L4V4L5V5
 function exportBuild(){
-  // compact base36 4-chars per attribute: 20 characters total
-  const s = toBase36Pad(getInput('str').value) + toBase36Pad(getInput('agi').value) + toBase36Pad(getInput('vit').value) + toBase36Pad(getInput('ene').value) + toBase36Pad(getInput('com').value);
+  const vals = [getInput('str').value, getInput('agi').value, getInput('vit').value, getInput('ene').value, getInput('com').value].map(v=> String(Math.max(0, Math.floor(Number(v)||0))));
+  // validate lengths (max 9 digits per attr)
+  for(let i=0;i<vals.length;i++){
+    if(vals[i].length > 9) return setInfo('Valor alto demais em um atributo (máx 9 dígitos).', true);
+  }
+  const encoded = vals.map(s => String(s.length) + s).join('');
   const el = document.getElementById('buildCode');
-  el.value = s;
-  try{ navigator.clipboard.writeText(s); }catch(e){ /* ignore */ }
+  el.value = encoded;
+  try{ navigator.clipboard.writeText(encoded); }catch(e){}
   setInfo('Código copiado para a área de transferência.');
 }
+
 function importBuild(){
   const code = (document.getElementById('buildCode').value || '').trim();
-  let str, agi, vit, ene, com;
-  if(/^[0-9]{25}$/.test(code)){
-    // Legacy numeric format
-    str = parseInt(code.slice(0,5),10);
-    agi = parseInt(code.slice(5,10),10);
-    vit = parseInt(code.slice(10,15),10);
-    ene = parseInt(code.slice(15,20),10);
-    com = parseInt(code.slice(20,25),10);
-  } else if(/^[0-9a-z]{20}$/i.test(code)){
-    const s = code.toLowerCase();
-    str = fromBase36Chunk(s.slice(0,4));
-    agi = fromBase36Chunk(s.slice(4,8));
-    vit = fromBase36Chunk(s.slice(8,12));
-    ene = fromBase36Chunk(s.slice(12,16));
-    com = fromBase36Chunk(s.slice(16,20));
-  } else {
-    return setInfo('Código inválido. Deve ser 20 caracteres base36 ou 25 dígitos numéricos.', true);
+  if(!code) return setInfo('Cole um código para importar.', true);
+  // Try new numeric length-prefixed format first
+  try{
+    let pos = 0;
+    const out = [];
+    for(let i=0;i<5;i++){
+      if(pos >= code.length) throw new Error('Formato inválido');
+      const lenDigit = parseInt(code[pos],10);
+      if(isNaN(lenDigit) || lenDigit < 0 || lenDigit > 9) throw new Error('Formato inválido');
+      pos++;
+      if(pos + lenDigit > code.length) throw new Error('Formato inválido');
+      const chunk = code.substr(pos, lenDigit);
+      if(!/^[0-9]*$/.test(chunk)) throw new Error('Formato inválido');
+      out.push(parseInt(chunk||'0',10));
+      pos += lenDigit;
+    }
+    if(pos !== code.length) throw new Error('Formato inválido');
+    // assign
+    getInput('str').value = out[0];
+    getInput('agi').value = out[1];
+    getInput('vit').value = out[2];
+    getInput('ene').value = out[3];
+    getInput('com').value = out[4];
+    setInfo('Build importada!');
+    return;
+  }catch(e){
+    // fallback: legacy numeric 25-digits or previous base36 format
   }
-  getInput('str').value = str;
-  getInput('agi').value = agi;
-  getInput('vit').value = vit;
-  getInput('ene').value = ene;
-  getInput('com').value = com;
-  setInfo('Build importada!');
+  // legacy support
+  if(/^[0-9]{25}$/.test(code)){
+    const str = parseInt(code.slice(0,5),10);
+    const agi = parseInt(code.slice(5,10),10);
+    const vit = parseInt(code.slice(10,15),10);
+    const ene = parseInt(code.slice(15,20),10);
+    const com = parseInt(code.slice(20,25),10);
+    getInput('str').value = str;
+    getInput('agi').value = agi;
+    getInput('vit').value = vit;
+    getInput('ene').value = ene;
+    getInput('com').value = com;
+    setInfo('Build importada (legacy)!');
+    return;
+  }
+  if(/^[0-9a-z]{20}$/i.test(code)){
+    const s = code.toLowerCase();
+    const str = fromBase36Chunk(s.slice(0,4));
+    const agi = fromBase36Chunk(s.slice(4,8));
+    const vit = fromBase36Chunk(s.slice(8,12));
+    const ene = fromBase36Chunk(s.slice(12,16));
+    const com = fromBase36Chunk(s.slice(16,20));
+    getInput('str').value = str;
+    getInput('agi').value = agi;
+    getInput('vit').value = vit;
+    getInput('ene').value = ene;
+    getInput('com').value = com;
+    setInfo('Build importada (base36)!');
+    return;
+  }
+  return setInfo('Código inválido. Use o novo formato numérico ou cole um código legacy.', true);
 }
 
 // wire export/import buttons
